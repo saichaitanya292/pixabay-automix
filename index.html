@@ -718,25 +718,33 @@
     }
 
     // Automix (crossfade)
-  function scheduleCrossfade() {
+  let crossfadeTimerId = null;
+
+function scheduleCrossfade() {
+  // Clear old handlers and timers
   audioA.onended = audioB.onended = null;
   audioA.ontimeupdate = audioB.ontimeupdate = null;
+  if (crossfadeTimerId) {
+    clearTimeout(crossfadeTimerId);
+    crossfadeTimerId = null;
+  }
 
   const audio = getActiveAudio();
   if (!audio) return;
 
-  // Always go to next track when the current one ends
+  // 1) Always go to the next track when the current one ends
   audio.onended = () => {
     goToNextTrack(true);
   };
 
-  // FORCE a crossfade after 5 seconds as a demo
+  // 2) FORCE a crossfade after crossfadeSeconds from the start
   const thisTrackIndex = currentIndex;
-  setTimeout(() => {
+  crossfadeTimerId = setTimeout(() => {
+    // if user paused or skipped, do nothing
     if (!isPlaying) return;
-    if (currentIndex !== thisTrackIndex) return; // user skipped
+    if (currentIndex !== thisTrackIndex) return;
     startCrossfadeToNext();
-  }, 5000);
+  }, crossfadeSeconds * 1000);
 }
 
       // If duration is known, do timed crossfade
