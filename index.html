@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Auto DJ – Pixabay Mix</title>
+  <title>Auto DJ – Smart Pixabay Mix</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     * { box-sizing: border-box; }
@@ -154,50 +154,6 @@
       background: #f3f4f6;
     }
 
-    .input {
-      flex: 1 1 160px;
-      border-radius: 999px;
-      border: 1px solid #d1d5db;
-      padding: 7px 11px;
-      background: #ffffff;
-      color: #111827;
-      font-size: 0.8rem;
-      outline: none;
-    }
-
-    .input::placeholder {
-      color: #9ca3af;
-    }
-
-    .input:focus {
-      border-color: #4f46e5;
-      box-shadow: 0 0 0 1px #4f46e5;
-    }
-
-    .btn {
-      border: none;
-      border-radius: 999px;
-      padding: 7px 14px;
-      font-size: 0.8rem;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      cursor: pointer;
-      white-space: nowrap;
-      background: linear-gradient(135deg, #4f46e5, #0ea5e9);
-      color: white;
-    }
-
-    .btn.secondary {
-      background: #ffffff;
-      border: 1px solid #d1d5db;
-      color: #111827;
-    }
-
-    .btn.secondary:hover {
-      background: #f3f4f6;
-    }
-
     .playlist {
       max-height: 260px;
       overflow-y: auto;
@@ -336,10 +292,10 @@
       <div>
         <div class="title">
           🎧 Auto DJ
-          <span class="badge">beat-aware</span>
+          <span class="badge">BPM · Beats · Phrases</span>
         </div>
         <div class="subtitle">
-          Drop a few Pixabay MP3s. The browser analyzes beats & energy and auto-mixes between tracks.
+          Drop a few Pixabay MP3s – the browser analyzes BPM, beats & energy and auto-mixes between tracks.
         </div>
       </div>
       <div class="chip">Web Audio · Local only</div>
@@ -353,7 +309,7 @@
           <span class="pill">MP3 recommended</span>
         </div>
         <p class="card-desc">
-          Download royalty-free songs from Pixabay and add them here. The player will choose mix points automatically.
+          Download royalty-free songs from Pixabay and add them here. Auto DJ picks mix-out points and fades automatically.
         </p>
 
         <div class="input-row">
@@ -366,7 +322,7 @@
         </div>
 
         <div class="hint">
-          Best results with 2–10 tracks of similar genre / tempo (e.g. all EDM, all chillhop).
+          Best results with 2–10 tracks of similar genre / tempo (all EDM, all lo-fi, etc.).
         </div>
       </div>
 
@@ -376,7 +332,7 @@
           <div class="card-title">Playlist & Auto Mix</div>
         </div>
         <p class="card-desc">
-          Auto DJ scans beats and energy to decide when and how to transition to the next track. No settings needed.
+          Tracks loop in order. Each song plays most of the way, then mixes out on a beat at an outro-like phrase.
         </p>
 
         <div id="playlist" class="playlist"></div>
@@ -392,31 +348,33 @@
 
         <div class="status" id="statusText"></div>
         <div class="hint">
-          The first song needs a tap to start (browser rule). Auto DJ will handle transitions after that.
+          First play needs a tap (browser rule). Mix timing and fade length are fully automatic.
         </div>
       </div>
     </div>
 
     <div class="footer">
-      All analysis happens in your browser. Remember to follow Pixabay’s license for public use.
+      All analysis happens in your browser. Follow Pixabay’s license if you use this in public.
     </div>
   </div>
 
   <script>
-    console.log("Auto DJ script loaded");
+    console.log("Smart Auto DJ script loaded");
 
-    // ---------------- CORE STATE ----------------
+    // --------- GLOBAL STATE ----------
     const playlist = [];
     let currentIndex = -1;
     let isPlaying = false;
     let isCrossfading = false;
     let fadeInterval = null;
 
-    const ANALYSIS_SECONDS = 60; // analyze first 60s
+    const ANALYSIS_SECONDS = 60;  // analyze first N seconds
     const MIN_BPM = 80;
     const MAX_BPM = 180;
+    const PHRASE_BEATS = 16;      // phrase length
+    let sessionBpm = null;        // global "target" BPM for sync
 
-    // Two audio elements for crossfade
+    // Audio elements for crossfade
     const audioA = new Audio();
     const audioB = new Audio();
     audioA.preload = "metadata";
@@ -427,7 +385,7 @@
     let activeAudio = audioA;
     let inactiveAudio = audioB;
 
-    // DOM elements
+    // DOM
     const fileInput = document.getElementById("fileInput");
     const playlistEl = document.getElementById("playlist");
     const emptyHint = document.getElementById("emptyHint");
@@ -441,7 +399,7 @@
       statusText.textContent = text || "";
     }
 
-    // ---------------- PLAYLIST UI ----------------
+    // --------- UI HELPERS ----------
     function formatSeconds(sec) {
       if (!sec || !isFinite(sec)) return "--:--";
       const m = Math.floor(sec / 60);
@@ -470,10 +428,12 @@
 
         const meta = document.createElement("div");
         meta.className = "track-meta";
-        let metaText = "File";
-        if (track.bpm) metaText += ` · ~${track.bpm} BPM`;
-        if (track.duration) metaText += ` · ${formatSeconds(track.duration)}`;
-        meta.textContent = metaText;
+
+        let metaParts = [];
+        if (track.bpm) metaParts.push(`~${track.bpm} BPM`);
+        if (track.duration) metaParts.push(formatSeconds(track.duration));
+        if (track.mixOutTime) metaParts.push(`Mix @ ${formatSeconds(track.mixOutTime)}`);
+        meta.textContent = metaParts.join(" · ") || "Analyzing…";
 
         main.appendChild(title);
         main.appendChild(meta);
@@ -503,9 +463,7 @@
         row.appendChild(main);
         row.appendChild(right);
 
-        row.addEventListener("click", () => {
-          startFromIndex(index);
-        });
+        row.addEventListener("click", () => startFromIndex(index));
 
         playlistEl.appendChild(row);
       });
@@ -520,9 +478,7 @@
         stopPlayback();
         currentIndex = -1;
       } else if (wasCurrent) {
-        if (index >= playlist.length) {
-          currentIndex = playlist.length - 1;
-        }
+        if (index >= playlist.length) currentIndex = playlist.length - 1;
         startFromIndex(currentIndex, true);
       } else if (index < currentIndex) {
         currentIndex -= 1;
@@ -542,7 +498,7 @@
       setStatus("Stopped.");
     }
 
-    // ---------------- WEB AUDIO DSP ----------------
+    // --------- WEB AUDIO DSP ----------
     function createAudioContext() {
       const Ctx = window.AudioContext || window.webkitAudioContext;
       if (!Ctx) return null;
@@ -560,7 +516,7 @@
     }
 
     function computeEnergyProfile(samples, sampleRate) {
-      const samplesPerSecond = sampleRate; // approx
+      const samplesPerSecond = sampleRate;
       const totalSeconds = Math.floor(samples.length / samplesPerSecond);
       const profile = [];
       let avg = 0;
@@ -578,11 +534,8 @@
         avg += energy;
       }
 
-      if (profile.length > 0) {
-        avg /= profile.length;
-      } else {
-        avg = 0;
-      }
+      if (profile.length > 0) avg /= profile.length;
+      else avg = 0;
 
       return { profile, avg };
     }
@@ -600,7 +553,7 @@
       return energies;
     }
 
-    function detectOnsets(energies, windowSize = 43, threshold = 1.3) {
+    function detectOnsets(energies, windowSize = 43, threshold = 1.35) {
       const onsets = [];
       for (let i = windowSize; i < energies.length; i++) {
         let avg = 0;
@@ -615,23 +568,28 @@
       return onsets;
     }
 
-    function estimateBpmFromSamples(samples, sampleRate) {
+    // Beat grid + BPM from onset intervals
+    function analyzeBeatGrid(samples, sampleRate) {
       const frameSize = 1024;
       const energies = frameEnergies(samples, frameSize);
       const onsets = detectOnsets(energies);
-
-      if (onsets.length < 2) return null;
+      if (onsets.length < 2) {
+        return { bpm: null, beatTimes: [] };
+      }
 
       const times = onsets.map(i => (i * frameSize) / sampleRate);
       const intervals = [];
       for (let i = 1; i < times.length; i++) {
-        intervals.push(times[i] - times[i - 1]);
+        const diff = times[i] - times[i - 1];
+        if (diff > 0.2 && diff < 2.0) intervals.push(diff); // 30–300 BPM-ish
+      }
+
+      if (intervals.length === 0) {
+        return { bpm: null, beatTimes: times };
       }
 
       const counts = {};
       intervals.forEach(int => {
-        if (int <= 0) return;
-        if (int < 0.2 || int > 2.0) return; // 30–300 BPM range
         const bucket = Math.round(int * 100) / 100;
         counts[bucket] = (counts[bucket] || 0) + 1;
       });
@@ -645,14 +603,101 @@
         }
       }
 
-      if (!bestInterval) return null;
+      if (!bestInterval) {
+        return { bpm: null, beatTimes: times };
+      }
 
       let bpm = 60 / bestInterval;
-
       while (bpm < MIN_BPM) bpm *= 2;
       while (bpm > MAX_BPM) bpm /= 2;
+      bpm = Math.round(bpm);
 
-      return Math.round(bpm);
+      return { bpm, beatTimes: times };
+    }
+
+    function computeMixOutFromBeats(track) {
+      const beats = track.beatTimes;
+      if (!beats || beats.length < PHRASE_BEATS * 2) {
+        track.mixOutTime = track.duration ? Math.max(0, track.duration - 12) : null;
+        track.fadeSeconds = 8;
+        return;
+      }
+
+      const phraseInfos = [];
+      const beatsPerPhrase = PHRASE_BEATS;
+      const totalBeats = beats.length;
+
+      for (let startBeat = 0; startBeat + beatsPerPhrase < totalBeats; startBeat += beatsPerPhrase) {
+        const endBeat = Math.min(startBeat + beatsPerPhrase, totalBeats - 1);
+        const startTime = beats[startBeat];
+        const endTime = beats[endBeat];
+        if (!track.energyProfile || track.energyProfile.length === 0) continue;
+
+        const secStart = Math.floor(startTime);
+        const secEnd = Math.floor(endTime);
+        let sum = 0;
+        let count = 0;
+        for (let s = secStart; s <= secEnd && s < track.energyProfile.length; s++) {
+          sum += track.energyProfile[s];
+          count++;
+        }
+        if (count === 0) continue;
+        const avgEnergy = sum / count;
+
+        phraseInfos.push({
+          startBeat,
+          endBeat,
+          startTime,
+          endTime,
+          avgEnergy,
+        });
+      }
+
+      if (phraseInfos.length === 0) {
+        track.mixOutTime = track.duration ? Math.max(0, track.duration - 12) : null;
+        track.fadeSeconds = 8;
+        return;
+      }
+
+      // Choose a phrase near the end with lower energy (outro-ish)
+      const globalAvg = track.avgEnergy || 0;
+      let candidate = null;
+
+      for (let i = phraseInfos.length - 1; i >= 0; i--) {
+        const ph = phraseInfos[i];
+        const timeToEnd = track.duration ? (track.duration - ph.startTime) : Infinity;
+
+        if (timeToEnd < 15) continue;       // too close to end
+        if (timeToEnd > 60) continue;       // too far from end
+        if (ph.avgEnergy < globalAvg * 0.9) { // a bit quieter
+          candidate = ph;
+          break;
+        }
+      }
+
+      if (!candidate) {
+        // fallback: last phrase within last 30s
+        for (let i = phraseInfos.length - 1; i >= 0; i--) {
+          const ph = phraseInfos[i];
+          const timeToEnd = track.duration ? (track.duration - ph.startTime) : Infinity;
+          if (timeToEnd <= 30) {
+            candidate = ph;
+            break;
+          }
+        }
+      }
+
+      if (!candidate) {
+        // final fallback: last 12 seconds
+        track.mixOutTime = track.duration ? Math.max(0, track.duration - 12) : null;
+      } else {
+        // Align mix-out to phrase start (nice and musical)
+        track.mixOutTime = candidate.startTime;
+      }
+
+      // Fade time based on BPM
+      const bpm = track.bpm || 120;
+      track.fadeSeconds = bpm >= 125 ? 4 : 8;
     }
 
     async function analyzeTrack(track) {
@@ -667,6 +712,8 @@
         const arrayBuffer = await track.file.arrayBuffer();
         const audioBuffer = await decodeBuffer(ctx, arrayBuffer);
 
+        track.duration = audioBuffer.duration;
+
         const sampleRate = audioBuffer.sampleRate;
         const channelData = audioBuffer.getChannelData(0);
         const maxSamples = Math.min(
@@ -675,17 +722,27 @@
         );
         const slice = channelData.slice(0, maxSamples);
 
+        // Energy profile (per second)
         const { profile, avg } = computeEnergyProfile(slice, sampleRate);
-        const bpm = estimateBpmFromSamples(slice, sampleRate);
-
         track.energyProfile = profile;
         track.avgEnergy = avg;
-        track.bpm = bpm || null;
-        track.duration = audioBuffer.duration;
+
+        // Beat grid + BPM
+        const { bpm, beatTimes } = analyzeBeatGrid(slice, sampleRate);
+        track.bpm = bpm;
+        track.beatTimes = beatTimes;
+
+        // Mix-out point + fade duration
+        computeMixOutFromBeats(track);
+
+        if (!sessionBpm && bpm) {
+          sessionBpm = bpm; // first valid BPM sets session tempo
+        }
 
         setStatus(
           `Analyzed: ${track.title}` +
-            (track.bpm ? ` · ~${track.bpm} BPM` : "")
+          (track.bpm ? ` · ~${track.bpm} BPM` : "") +
+          (track.mixOutTime ? ` · mix @ ${formatSeconds(track.mixOutTime)}` : "")
         );
         renderPlaylist();
       } catch (err) {
@@ -695,7 +752,7 @@
       }
     }
 
-    // ---------------- FILE INPUT ----------------
+    // --------- FILE INPUT ----------
     fileInput.addEventListener("change", (e) => {
       const files = Array.from(e.target.files || []);
       if (!files.length) {
@@ -704,7 +761,6 @@
       }
 
       let addedCount = 0;
-
       files.forEach((file) => {
         if (file.size === 0) return;
 
@@ -717,14 +773,16 @@
           url: URL.createObjectURL(file),
           duration: null,
           bpm: null,
+          beatTimes: null,
           energyProfile: null,
           avgEnergy: null,
+          mixOutTime: null,
+          fadeSeconds: 8,
         };
 
         playlist.push(track);
         addedCount++;
 
-        // Kick off async analysis
         analyzeTrack(track);
       });
 
@@ -738,7 +796,7 @@
       fileInput.value = "";
     });
 
-    // ---------------- AUDIO HELPERS ----------------
+    // --------- AUDIO HELPERS ----------
     function getActiveAudio() {
       return activeAudio;
     }
@@ -772,7 +830,19 @@
       audio.load();
     }
 
-    // ---------------- PLAYBACK ----------------
+    // --------- PLAYBACK ----------
+    function applyTempoSync(audio, track) {
+      if (!track.bpm || !sessionBpm) {
+        audio.playbackRate = 1.0;
+        return;
+      }
+      let rate = sessionBpm / track.bpm;
+      // clamp a bit so it doesn't sound crazy
+      if (rate < 0.85) rate = 0.85;
+      if (rate > 1.25) rate = 1.25;
+      audio.playbackRate = rate;
+    }
+
     function playTrack(index) {
       if (index < 0 || index >= playlist.length) {
         setStatus("No more tracks.");
@@ -787,6 +857,7 @@
 
       const audio = getActiveAudio();
       loadTrackInto(audio, track);
+      applyTempoSync(audio, track);
       audio.volume = 1;
 
       audio
@@ -815,12 +886,13 @@
         const track = playlist[currentIndex];
         const audio = getActiveAudio();
         loadTrackInto(audio, track);
+        applyTempoSync(audio, track);
         setStatus(`Ready: ${track.title}`);
         renderPlaylist();
       }
     }
 
-    // ---------------- AUTO DJ LOGIC ----------------
+    // --------- AUTO MIX LOGIC ----------
     function scheduleAutoMix() {
       const audio = getActiveAudio();
       const track = playlist[currentIndex];
@@ -830,7 +902,6 @@
       audio.ontimeupdate = null;
 
       if (playlist.length < 2) {
-        // No next track to mix to
         audio.onended = () => {
           setStatus("End of single-track playback.");
           isPlaying = false;
@@ -839,53 +910,30 @@
         return;
       }
 
-      // Fallback: if we can't analyze, mix in last 8 seconds
-      if (!track.energyProfile || !track.avgEnergy || !track.bpm) {
-        audio.ontimeupdate = () => {
-          if (!isPlaying || isCrossfading || !audio.duration) return;
-          const timeLeft = audio.duration - audio.currentTime;
-          if (timeLeft <= 8) {
-            console.log("Fallback time-based crossfade");
-            startCrossfadeToNext(6);
-          }
-        };
-        audio.onended = () => {
-          if (!isCrossfading) startCrossfadeToNext(6);
-        };
-        return;
-      }
-
-      const beatDuration = 60 / track.bpm;
-
       audio.ontimeupdate = () => {
-        if (!isPlaying || isCrossfading) return;
-        if (!audio.duration) return;
+        if (!isPlaying || isCrossfading || !audio.duration) return;
+        if (!track.mixOutTime) {
+          // fallback: last 10s
+          const timeLeft = audio.duration - audio.currentTime;
+          if (timeLeft <= 10) {
+            startCrossfadeToNext(track.fadeSeconds || 8);
+          }
+          return;
+        }
 
-        const tSec = audio.currentTime;
-        const tInt = Math.floor(tSec);
+        const t = audio.currentTime;
+        const timeToMix = track.mixOutTime - t;
 
-        if (tInt < 0 || tInt >= track.energyProfile.length) return;
-
-        const energy = track.energyProfile[tInt];
-        const isLowEnergy = energy < track.avgEnergy * 0.65;
-
-        const beatsFromStart = tSec / beatDuration;
-        const frac = Math.abs(beatsFromStart - Math.round(beatsFromStart));
-        const onBeat = frac < 0.05;
-
-        // Opportunistic auto mix:
-        // low energy + near a beat → mix point
-        if (isLowEnergy && onBeat) {
-          console.log("Auto DJ: good mix moment found");
-          const fadeSeconds = track.bpm > 120 ? 4 : 8;
-          startCrossfadeToNext(fadeSeconds);
+        // Start crossfade very close to planned mix-out moment
+        if (timeToMix <= 0.05 && timeToMix > -1 && !isCrossfading) {
+          console.log("Auto DJ: mix-out trigger", track.title);
+          startCrossfadeToNext(track.fadeSeconds || 8);
         }
       };
 
-      // Extra safety: if track somehow finishes, still move on
       audio.onended = () => {
         if (!isCrossfading) {
-          startCrossfadeToNext(6);
+          startCrossfadeToNext(track.fadeSeconds || 6);
         }
       };
     }
@@ -894,7 +942,6 @@
       if (isCrossfading) return;
       if (playlist.length < 2) return;
 
-      // Loop playlist: after last, go back to first
       let nextIndex = (currentIndex + 1) % playlist.length;
 
       isCrossfading = true;
@@ -904,6 +951,7 @@
       const nextTrack = playlist[nextIndex];
 
       loadTrackInto(nextAudio, nextTrack);
+      applyTempoSync(nextAudio, nextTrack);
       nextAudio.volume = 0;
 
       nextAudio
@@ -919,7 +967,7 @@
             step++;
             const t = step / steps;
 
-            // Equal-power fade
+            // Equal-power fade curve
             const volOut = Math.cos((t * Math.PI) / 2);
             const volIn = Math.sin((t * Math.PI) / 2);
 
@@ -942,7 +990,6 @@
         .catch((err) => {
           console.error("Crossfade failed:", err);
           clearFadeInterval();
-          // Fallback: hard switch
           currentAudio.pause();
           currentAudio.currentTime = 0;
           swapAudios();
@@ -965,7 +1012,7 @@
       playTrack(prevIndex);
     }
 
-    // ---------------- CONTROLS ----------------
+    // --------- CONTROLS ----------
     playPauseBtn.addEventListener("click", () => {
       if (playlist.length === 0) {
         setStatus("Add some tracks first.");
