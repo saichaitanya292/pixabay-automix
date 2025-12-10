@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Pixabay Automix (Light)</title>
+  <title>Pixabay Automix – Natural Mix</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     * { box-sizing: border-box; }
@@ -357,10 +357,10 @@
       <div>
         <div class="title">
           🎚️ Pixabay Automix
-          <span class="badge">beta</span>
+          <span class="badge">natural mix</span>
         </div>
         <div class="subtitle">
-          Load royalty-free tracks (e.g. from Pixabay Music) and let the browser auto-mix them with smooth crossfades.
+          Plays each song and gently crossfades into the next track in the last few seconds.
         </div>
       </div>
       <div class="chip">Locally mixed · No server</div>
@@ -371,10 +371,10 @@
       <div class="card">
         <div class="card-header">
           <div class="card-title">Add Tracks</div>
-          <span class="pill">Recommended: MP3</span>
+          <span class="pill">MP3 recommended</span>
         </div>
         <p class="card-desc">
-          Download music from Pixabay, then either upload the files or paste direct MP3 URLs.
+          Download royalty-free music from Pixabay, then upload the files here.
         </p>
 
         <div class="input-row">
@@ -388,23 +388,23 @@
           <input
             id="urlInput"
             class="input"
-            placeholder="https://example.com/path-to-track.mp3"
+            placeholder="(Optional) Direct MP3 URL"
           />
           <button id="addUrlBtn" class="btn secondary">➕ Add URL</button>
         </div>
 
         <div class="hint">
-          Tip: On Pixabay Music, download the track as MP3 and add the file here.
+          Tip: Use songs with similar tempo / mood for smoother, more natural transitions.
         </div>
       </div>
 
       <!-- RIGHT: PLAYER -->
       <div class="card">
         <div class="card-header">
-          <div class="card-title">Playlist & Automix</div>
+          <div class="card-title">Playlist & Natural Automix</div>
         </div>
         <p class="card-desc">
-          Tracks play in order with an automatic crossfade between them. No shuffle, no gaps.
+          Tracks play in order. The next song fades in during the last few seconds of the current one.
         </p>
 
         <div id="playlist" class="playlist"></div>
@@ -418,11 +418,11 @@
           </div>
 
           <div class="slider-group">
-            <span class="slider-label">Crossfade</span>
+            <span class="slider-label">Fade length</span>
             <input
               id="crossfadeSlider"
               type="range"
-              min="2"
+              min="3"
               max="20"
               value="8"
             />
@@ -432,27 +432,27 @@
 
         <div class="status" id="statusText"></div>
         <div class="hint">
-          The first play requires a user click (browser autoplay rule). After that, automix will continue.
+          The first play requires a user click (autoplay rule). Last track ends normally (no next song to mix into).
         </div>
       </div>
     </div>
 
     <div class="footer">
-      Uses local audio files / URLs. Remember to follow Pixabay’s license when you source tracks.
+      Uses local files / URLs only. Respect Pixabay licenses when using their music.
     </div>
   </div>
+
   <script>
+    console.log("Natural mix script loaded");
+
     // STATE
-    const playlist = []; // <--- you were missing this
+    const playlist = [];
     let currentIndex = -1;
     let isPlaying = false;
     let isCrossfading = false;
-
-    // X seconds from slider: used both for
-    // 1) how long we wait before mixing
-    // 2) how long the crossfade lasts
-    let crossfadeSeconds = 8;
+    let crossfadeSeconds = 8; // fade length + "last X seconds"
     let crossfadeTimerId = null;
+    const fallbackMixAfter = 90; // if duration missing, mix after 90s
 
     // Two audio elements for crossfade
     const audioA = new Audio();
@@ -480,6 +480,7 @@
     const statusText = document.getElementById("statusText");
 
     function setStatus(text) {
+      console.log("STATUS:", text);
       statusText.textContent = text || "";
     }
 
@@ -595,6 +596,7 @@
     // Add tracks from file
     fileInput.addEventListener("change", (e) => {
       const files = Array.from(e.target.files || []);
+      console.log("fileInput change:", files);
       if (!files.length) {
         setStatus("No files selected.");
         return;
@@ -626,7 +628,7 @@
       fileInput.value = "";
     });
 
-    // Add tracks from URL
+    // Add tracks from URL (optional)
     addUrlBtn.addEventListener("click", () => {
       const url = urlInput.value.trim();
       if (!url) return;
@@ -733,8 +735,10 @@
       }
     }
 
-    // Automix (mix after X seconds)
+    // Natural Automix: fade in the last X seconds of track
     function scheduleCrossfade() {
+      console.log("scheduleCrossfade for index", currentIndex);
+
       // Clear handlers and timers
       audioA.onended = audioB.onended = null;
       audioA.ontimeupdate = audioB.ontimeupdate = null;
@@ -746,24 +750,41 @@
       const audio = getActiveAudio();
       if (!audio) return;
 
-      // Always continue to next track when one ends
+      // When track ends and there's a next track, just go to it (no crossfade)
       audio.onended = () => {
+        console.log("Track ended, goToNextTrack");
         goToNextTrack(true);
       };
 
-      // MIX AFTER X SECONDS (slider)
       const thisTrackIndex = currentIndex;
-      crossfadeTimerId = setTimeout(() => {
-        if (!isPlaying) return;
-        if (currentIndex !== thisTrackIndex) return;
-        startCrossfadeToNext();
-      }, crossfadeSeconds * 1000);
+
+      if (audio.duration && isFinite(audio.duration)) {
+        // Mix in the last crossfadeSeconds of the track
+        audio.ontimeupdate = () => {
+          if (!isPlaying || isCrossfading || currentIndex !== thisTrackIndex) return;
+          const timeLeft = audio.duration - audio.currentTime;
+          if (timeLeft <= crossfadeSeconds && crossfadeSeconds < audio.duration) {
+            console.log("Time-based crossfade trigger, timeLeft:", timeLeft);
+            startCrossfadeToNext();
+          }
+        };
+      } else {
+        // If duration can't be read, fallback: mix after fallbackMixAfter seconds
+        crossfadeTimerId = setTimeout(() => {
+          if (!isPlaying || currentIndex !== thisTrackIndex) return;
+          console.log("Fallback timer crossfade");
+          startCrossfadeToNext();
+        }, fallbackMixAfter * 1000);
+      }
     }
 
     function startCrossfadeToNext() {
       if (isCrossfading) return;
       const nextIndex = currentIndex + 1;
-      if (nextIndex >= playlist.length) return; // last track, no crossfade
+      if (nextIndex >= playlist.length) {
+        console.log("No next track to crossfade into.");
+        return; // last track, nothing to mix into
+      }
 
       isCrossfading = true;
 
@@ -785,11 +806,13 @@
           fadeInterval = setInterval(() => {
             step++;
             const t = step / steps;
-            const newVolCurrent = Math.max(0, 1 - t);
-            const newVolNext = Math.min(1, t);
 
-            currentAudio.volume = newVolCurrent;
-            nextAudio.volume = newVolNext;
+            // Equal-ish power style curve: smoother than linear
+            const newVolCurrent = Math.cos((t * Math.PI) / 2); // 1 -> 0
+            const newVolNext = Math.sin((t * Math.PI) / 2);    // 0 -> 1
+
+            currentAudio.volume = Math.max(0, Math.min(1, newVolCurrent));
+            nextAudio.volume = Math.max(0, Math.min(1, newVolNext));
 
             if (step >= steps) {
               clearFadeInterval();
@@ -799,7 +822,7 @@
               currentIndex = nextIndex;
               renderPlaylist();
               setStatus(`Now playing: ${nextTrack.title}`);
-              scheduleCrossfade(); // schedule next mix
+              scheduleCrossfade(); // schedule mix for the new active track
             }
           }, stepTime);
         })
@@ -874,7 +897,11 @@
       if (playlist.length === 0) return;
       goToPrevTrack();
     });
+
+    window.addEventListener("error", (e) => {
+      console.error("Global JS error:", e.message);
+      setStatus("Error in script: " + e.message);
+    });
   </script>
-  
 </body>
 </html>
