@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Pixabay Automix – Natural Mix</title>
+  <title>Auto DJ – Pixabay Mix</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     * { box-sizing: border-box; }
@@ -128,55 +128,6 @@
       margin-bottom: 10px;
     }
 
-    .input {
-      flex: 1 1 160px;
-      border-radius: 999px;
-      border: 1px solid #d1d5db;
-      padding: 7px 11px;
-      background: #ffffff;
-      color: #111827;
-      font-size: 0.8rem;
-      outline: none;
-    }
-
-    .input:focus {
-      border-color: #4f46e5;
-      box-shadow: 0 0 0 1px #4f46e5;
-    }
-
-    .input::placeholder {
-      color: #9ca3af;
-    }
-
-    .btn {
-      border: none;
-      border-radius: 999px;
-      padding: 7px 14px;
-      font-size: 0.8rem;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      cursor: pointer;
-      white-space: nowrap;
-      background: linear-gradient(135deg, #4f46e5, #0ea5e9);
-      color: white;
-    }
-
-    .btn.secondary {
-      background: #ffffff;
-      border: 1px solid #d1d5db;
-      color: #111827;
-    }
-
-    .btn.secondary:hover {
-      background: #f3f4f6;
-    }
-
-    .btn:disabled {
-      opacity: 0.5;
-      cursor: default;
-    }
-
     .file-input {
       display: inline-block;
       font-size: 0.8rem;
@@ -203,8 +154,52 @@
       background: #f3f4f6;
     }
 
+    .input {
+      flex: 1 1 160px;
+      border-radius: 999px;
+      border: 1px solid #d1d5db;
+      padding: 7px 11px;
+      background: #ffffff;
+      color: #111827;
+      font-size: 0.8rem;
+      outline: none;
+    }
+
+    .input::placeholder {
+      color: #9ca3af;
+    }
+
+    .input:focus {
+      border-color: #4f46e5;
+      box-shadow: 0 0 0 1px #4f46e5;
+    }
+
+    .btn {
+      border: none;
+      border-radius: 999px;
+      padding: 7px 14px;
+      font-size: 0.8rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      white-space: nowrap;
+      background: linear-gradient(135deg, #4f46e5, #0ea5e9);
+      color: white;
+    }
+
+    .btn.secondary {
+      background: #ffffff;
+      border: 1px solid #d1d5db;
+      color: #111827;
+    }
+
+    .btn.secondary:hover {
+      background: #f3f4f6;
+    }
+
     .playlist {
-      max-height: 230px;
+      max-height: 260px;
       overflow-y: auto;
       padding-right: 4px;
       margin-bottom: 6px;
@@ -314,22 +309,6 @@
       opacity: 0.9;
     }
 
-    .slider-group {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .slider-label {
-      font-size: 0.75rem;
-      color: #6b7280;
-      white-space: nowrap;
-    }
-
-    input[type="range"] {
-      accent-color: #4f46e5;
-    }
-
     .status {
       font-size: 0.75rem;
       color: #4f46e5;
@@ -356,14 +335,14 @@
     <div class="header">
       <div>
         <div class="title">
-          🎚️ Pixabay Automix
-          <span class="badge">natural mix</span>
+          🎧 Auto DJ
+          <span class="badge">beat-aware</span>
         </div>
         <div class="subtitle">
-          Plays each song and gently crossfades into the next track in the last few seconds.
+          Drop a few Pixabay MP3s. The browser analyzes beats & energy and auto-mixes between tracks.
         </div>
       </div>
-      <div class="chip">Locally mixed · No server</div>
+      <div class="chip">Web Audio · Local only</div>
     </div>
 
     <div class="grid">
@@ -374,7 +353,7 @@
           <span class="pill">MP3 recommended</span>
         </div>
         <p class="card-desc">
-          Download royalty-free music from Pixabay, then upload the files here.
+          Download royalty-free songs from Pixabay and add them here. The player will choose mix points automatically.
         </p>
 
         <div class="input-row">
@@ -384,27 +363,20 @@
               <input id="fileInput" type="file" multiple />
             </label>
           </div>
-
-          <input
-            id="urlInput"
-            class="input"
-            placeholder="(Optional) Direct MP3 URL"
-          />
-          <button id="addUrlBtn" class="btn secondary">➕ Add URL</button>
         </div>
 
         <div class="hint">
-          Tip: Use songs with similar tempo / mood for smoother, more natural transitions.
+          Best results with 2–10 tracks of similar genre / tempo (e.g. all EDM, all chillhop).
         </div>
       </div>
 
       <!-- RIGHT: PLAYER -->
       <div class="card">
         <div class="card-header">
-          <div class="card-title">Playlist & Natural Automix</div>
+          <div class="card-title">Playlist & Auto Mix</div>
         </div>
         <p class="card-desc">
-          Tracks play in order. The next song fades in during the last few seconds of the current one.
+          Auto DJ scans beats and energy to decide when and how to transition to the next track. No settings needed.
         </p>
 
         <div id="playlist" class="playlist"></div>
@@ -416,43 +388,33 @@
             <button id="playPauseBtn" class="control-btn primary" title="Play / Pause">▶</button>
             <button id="nextBtn" class="control-btn" title="Next">⏭</button>
           </div>
-
-          <div class="slider-group">
-            <span class="slider-label">Fade length</span>
-            <input
-              id="crossfadeSlider"
-              type="range"
-              min="3"
-              max="20"
-              value="8"
-            />
-            <span id="crossfadeValue" class="slider-label">8s</span>
-          </div>
         </div>
 
         <div class="status" id="statusText"></div>
         <div class="hint">
-          The first play requires a user click (autoplay rule). Last track ends normally (no next song to mix into).
+          The first song needs a tap to start (browser rule). Auto DJ will handle transitions after that.
         </div>
       </div>
     </div>
 
     <div class="footer">
-      Uses local files / URLs only. Respect Pixabay licenses when using their music.
+      All analysis happens in your browser. Remember to follow Pixabay’s license for public use.
     </div>
   </div>
 
   <script>
-    console.log("Natural mix script loaded");
+    console.log("Auto DJ script loaded");
 
-    // STATE
+    // ---------------- CORE STATE ----------------
     const playlist = [];
     let currentIndex = -1;
     let isPlaying = false;
     let isCrossfading = false;
-    let crossfadeSeconds = 8; // fade length + "last X seconds"
-    let crossfadeTimerId = null;
-    const fallbackMixAfter = 90; // if duration missing, mix after 90s
+    let fadeInterval = null;
+
+    const ANALYSIS_SECONDS = 60; // analyze first 60s
+    const MIN_BPM = 80;
+    const MAX_BPM = 180;
 
     // Two audio elements for crossfade
     const audioA = new Audio();
@@ -464,19 +426,14 @@
 
     let activeAudio = audioA;
     let inactiveAudio = audioB;
-    let fadeInterval = null;
 
     // DOM elements
     const fileInput = document.getElementById("fileInput");
-    const urlInput = document.getElementById("urlInput");
-    const addUrlBtn = document.getElementById("addUrlBtn");
     const playlistEl = document.getElementById("playlist");
     const emptyHint = document.getElementById("emptyHint");
     const playPauseBtn = document.getElementById("playPauseBtn");
     const prevBtn = document.getElementById("prevBtn");
     const nextBtn = document.getElementById("nextBtn");
-    const crossfadeSlider = document.getElementById("crossfadeSlider");
-    const crossfadeValue = document.getElementById("crossfadeValue");
     const statusText = document.getElementById("statusText");
 
     function setStatus(text) {
@@ -484,15 +441,7 @@
       statusText.textContent = text || "";
     }
 
-    function updateCrossfadeValue() {
-      crossfadeSeconds = Number(crossfadeSlider.value) || 8;
-      crossfadeValue.textContent = crossfadeSeconds + "s";
-    }
-
-    updateCrossfadeValue();
-    crossfadeSlider.addEventListener("input", updateCrossfadeValue);
-
-    // Helpers
+    // ---------------- PLAYLIST UI ----------------
     function formatSeconds(sec) {
       if (!sec || !isFinite(sec)) return "--:--";
       const m = Math.floor(sec / 60);
@@ -517,14 +466,14 @@
 
         const title = document.createElement("div");
         title.className = "track-title";
-        title.textContent = track.title || "Untitled track";
+        title.textContent = track.title || "Untitled";
 
         const meta = document.createElement("div");
         meta.className = "track-meta";
-        const sourceLabel = track.sourceType === "file" ? "File" : "URL";
-        meta.textContent =
-          sourceLabel +
-          (track.duration ? " · " + formatSeconds(track.duration) : "");
+        let metaText = "File";
+        if (track.bpm) metaText += ` · ~${track.bpm} BPM`;
+        if (track.duration) metaText += ` · ${formatSeconds(track.duration)}`;
+        meta.textContent = metaText;
 
         main.appendChild(title);
         main.appendChild(meta);
@@ -542,7 +491,7 @@
         const removeBtn = document.createElement("button");
         removeBtn.className = "remove-btn";
         removeBtn.innerHTML = "✕";
-        removeBtn.title = "Remove track";
+        removeBtn.title = "Remove";
 
         removeBtn.addEventListener("click", (e) => {
           e.stopPropagation();
@@ -593,10 +542,162 @@
       setStatus("Stopped.");
     }
 
-    // Add tracks from file
+    // ---------------- WEB AUDIO DSP ----------------
+    function createAudioContext() {
+      const Ctx = window.AudioContext || window.webkitAudioContext;
+      if (!Ctx) return null;
+      return new Ctx();
+    }
+
+    function decodeBuffer(ctx, arrayBuffer) {
+      return new Promise((resolve, reject) => {
+        ctx.decodeAudioData(
+          arrayBuffer,
+          (buf) => resolve(buf),
+          (err) => reject(err)
+        );
+      });
+    }
+
+    function computeEnergyProfile(samples, sampleRate) {
+      const samplesPerSecond = sampleRate; // approx
+      const totalSeconds = Math.floor(samples.length / samplesPerSecond);
+      const profile = [];
+      let avg = 0;
+
+      for (let sec = 0; sec < totalSeconds; sec++) {
+        let sum = 0;
+        const start = sec * samplesPerSecond;
+        const end = Math.min(samples.length, start + samplesPerSecond);
+        for (let i = start; i < end; i++) {
+          const v = samples[i];
+          sum += v * v;
+        }
+        const energy = sum / (end - start || 1);
+        profile.push(energy);
+        avg += energy;
+      }
+
+      if (profile.length > 0) {
+        avg /= profile.length;
+      } else {
+        avg = 0;
+      }
+
+      return { profile, avg };
+    }
+
+    function frameEnergies(samples, frameSize) {
+      const energies = [];
+      for (let i = 0; i < samples.length; i += frameSize) {
+        let sum = 0;
+        for (let j = 0; j < frameSize && i + j < samples.length; j++) {
+          const v = samples[i + j];
+          sum += v * v;
+        }
+        energies.push(sum);
+      }
+      return energies;
+    }
+
+    function detectOnsets(energies, windowSize = 43, threshold = 1.3) {
+      const onsets = [];
+      for (let i = windowSize; i < energies.length; i++) {
+        let avg = 0;
+        for (let j = i - windowSize; j < i; j++) {
+          avg += energies[j];
+        }
+        avg /= windowSize;
+        if (energies[i] > threshold * avg) {
+          onsets.push(i);
+        }
+      }
+      return onsets;
+    }
+
+    function estimateBpmFromSamples(samples, sampleRate) {
+      const frameSize = 1024;
+      const energies = frameEnergies(samples, frameSize);
+      const onsets = detectOnsets(energies);
+
+      if (onsets.length < 2) return null;
+
+      const times = onsets.map(i => (i * frameSize) / sampleRate);
+      const intervals = [];
+      for (let i = 1; i < times.length; i++) {
+        intervals.push(times[i] - times[i - 1]);
+      }
+
+      const counts = {};
+      intervals.forEach(int => {
+        if (int <= 0) return;
+        if (int < 0.2 || int > 2.0) return; // 30–300 BPM range
+        const bucket = Math.round(int * 100) / 100;
+        counts[bucket] = (counts[bucket] || 0) + 1;
+      });
+
+      let bestInterval = null;
+      let bestCount = 0;
+      for (const key in counts) {
+        if (counts[key] > bestCount) {
+          bestCount = counts[key];
+          bestInterval = parseFloat(key);
+        }
+      }
+
+      if (!bestInterval) return null;
+
+      let bpm = 60 / bestInterval;
+
+      while (bpm < MIN_BPM) bpm *= 2;
+      while (bpm > MAX_BPM) bpm /= 2;
+
+      return Math.round(bpm);
+    }
+
+    async function analyzeTrack(track) {
+      if (!track.file) return;
+      const ctx = createAudioContext();
+      if (!ctx) {
+        console.warn("Web Audio API not supported.");
+        return;
+      }
+
+      try {
+        const arrayBuffer = await track.file.arrayBuffer();
+        const audioBuffer = await decodeBuffer(ctx, arrayBuffer);
+
+        const sampleRate = audioBuffer.sampleRate;
+        const channelData = audioBuffer.getChannelData(0);
+        const maxSamples = Math.min(
+          channelData.length,
+          sampleRate * ANALYSIS_SECONDS
+        );
+        const slice = channelData.slice(0, maxSamples);
+
+        const { profile, avg } = computeEnergyProfile(slice, sampleRate);
+        const bpm = estimateBpmFromSamples(slice, sampleRate);
+
+        track.energyProfile = profile;
+        track.avgEnergy = avg;
+        track.bpm = bpm || null;
+        track.duration = audioBuffer.duration;
+
+        setStatus(
+          `Analyzed: ${track.title}` +
+            (track.bpm ? ` · ~${track.bpm} BPM` : "")
+        );
+        renderPlaylist();
+      } catch (err) {
+        console.error("Track analysis failed:", err);
+      } finally {
+        ctx.close();
+      }
+    }
+
+    // ---------------- FILE INPUT ----------------
     fileInput.addEventListener("change", (e) => {
       const files = Array.from(e.target.files || []);
-      console.log("fileInput change:", files);
       if (!files.length) {
         setStatus("No files selected.");
         return;
@@ -607,54 +708,37 @@
       files.forEach((file) => {
         if (file.size === 0) return;
 
-        playlist.push({
+        const baseTitle = file.name.replace(/\.[^/.]+$/, "");
+        const track = {
           id: crypto.randomUUID(),
-          title: file.name.replace(/\.[^/.]+$/, ""),
+          title: baseTitle,
           sourceType: "file",
           file,
           url: URL.createObjectURL(file),
           duration: null,
-        });
+          bpm: null,
+          energyProfile: null,
+          avgEnergy: null,
+        };
+
+        playlist.push(track);
         addedCount++;
+
+        // Kick off async analysis
+        analyzeTrack(track);
       });
 
       if (addedCount === 0) {
-        setStatus("Could not add any tracks. Try a different MP3 file.");
+        setStatus("Could not add any tracks.");
       } else {
-        setStatus(`Added ${addedCount} file(s) to playlist.`);
+        setStatus(`Added ${addedCount} track(s). Analyzing…`);
       }
 
       renderPlaylist();
       fileInput.value = "";
     });
 
-    // Add tracks from URL (optional)
-    addUrlBtn.addEventListener("click", () => {
-      const url = urlInput.value.trim();
-      if (!url) return;
-      try {
-        new URL(url);
-      } catch {
-        setStatus("Please enter a valid URL.");
-        return;
-      }
-
-      const titleGuess = url.split("/").pop().split("?")[0];
-      playlist.push({
-        id: crypto.randomUUID(),
-        title: decodeURIComponent(titleGuess || "Track (URL)"),
-        sourceType: "url",
-        file: null,
-        url,
-        duration: null,
-      });
-
-      setStatus("URL track added.");
-      urlInput.value = "";
-      renderPlaylist();
-    });
-
-    // Audio helpers
+    // ---------------- AUDIO HELPERS ----------------
     function getActiveAudio() {
       return activeAudio;
     }
@@ -688,6 +772,7 @@
       audio.load();
     }
 
+    // ---------------- PLAYBACK ----------------
     function playTrack(index) {
       if (index < 0 || index >= playlist.length) {
         setStatus("No more tracks.");
@@ -702,8 +787,8 @@
 
       const audio = getActiveAudio();
       loadTrackInto(audio, track);
-
       audio.volume = 1;
+
       audio
         .play()
         .then(() => {
@@ -711,7 +796,7 @@
           playPauseBtn.textContent = "⏸";
           setStatus(`Now playing: ${track.title}`);
           renderPlaylist();
-          scheduleCrossfade();
+          scheduleAutoMix();
         })
         .catch((err) => {
           console.error(err);
@@ -735,56 +820,82 @@
       }
     }
 
-    // Natural Automix: fade in the last X seconds of track
-    function scheduleCrossfade() {
-      console.log("scheduleCrossfade for index", currentIndex);
+    // ---------------- AUTO DJ LOGIC ----------------
+    function scheduleAutoMix() {
+      const audio = getActiveAudio();
+      const track = playlist[currentIndex];
+      if (!audio || !track) return;
 
-      // Clear handlers and timers
-      audioA.onended = audioB.onended = null;
-      audioA.ontimeupdate = audioB.ontimeupdate = null;
-      if (crossfadeTimerId) {
-        clearTimeout(crossfadeTimerId);
-        crossfadeTimerId = null;
+      audio.onended = null;
+      audio.ontimeupdate = null;
+
+      if (playlist.length < 2) {
+        // No next track to mix to
+        audio.onended = () => {
+          setStatus("End of single-track playback.");
+          isPlaying = false;
+          playPauseBtn.textContent = "▶";
+        };
+        return;
       }
 
-      const audio = getActiveAudio();
-      if (!audio) return;
-
-      // When track ends and there's a next track, just go to it (no crossfade)
-      audio.onended = () => {
-        console.log("Track ended, goToNextTrack");
-        goToNextTrack(true);
-      };
-
-      const thisTrackIndex = currentIndex;
-
-      if (audio.duration && isFinite(audio.duration)) {
-        // Mix in the last crossfadeSeconds of the track
+      // Fallback: if we can't analyze, mix in last 8 seconds
+      if (!track.energyProfile || !track.avgEnergy || !track.bpm) {
         audio.ontimeupdate = () => {
-          if (!isPlaying || isCrossfading || currentIndex !== thisTrackIndex) return;
+          if (!isPlaying || isCrossfading || !audio.duration) return;
           const timeLeft = audio.duration - audio.currentTime;
-          if (timeLeft <= crossfadeSeconds && crossfadeSeconds < audio.duration) {
-            console.log("Time-based crossfade trigger, timeLeft:", timeLeft);
-            startCrossfadeToNext();
+          if (timeLeft <= 8) {
+            console.log("Fallback time-based crossfade");
+            startCrossfadeToNext(6);
           }
         };
-      } else {
-        // If duration can't be read, fallback: mix after fallbackMixAfter seconds
-        crossfadeTimerId = setTimeout(() => {
-          if (!isPlaying || currentIndex !== thisTrackIndex) return;
-          console.log("Fallback timer crossfade");
-          startCrossfadeToNext();
-        }, fallbackMixAfter * 1000);
+        audio.onended = () => {
+          if (!isCrossfading) startCrossfadeToNext(6);
+        };
+        return;
       }
+
+      const beatDuration = 60 / track.bpm;
+
+      audio.ontimeupdate = () => {
+        if (!isPlaying || isCrossfading) return;
+        if (!audio.duration) return;
+
+        const tSec = audio.currentTime;
+        const tInt = Math.floor(tSec);
+
+        if (tInt < 0 || tInt >= track.energyProfile.length) return;
+
+        const energy = track.energyProfile[tInt];
+        const isLowEnergy = energy < track.avgEnergy * 0.65;
+
+        const beatsFromStart = tSec / beatDuration;
+        const frac = Math.abs(beatsFromStart - Math.round(beatsFromStart));
+        const onBeat = frac < 0.05;
+
+        // Opportunistic auto mix:
+        // low energy + near a beat → mix point
+        if (isLowEnergy && onBeat) {
+          console.log("Auto DJ: good mix moment found");
+          const fadeSeconds = track.bpm > 120 ? 4 : 8;
+          startCrossfadeToNext(fadeSeconds);
+        }
+      };
+
+      // Extra safety: if track somehow finishes, still move on
+      audio.onended = () => {
+        if (!isCrossfading) {
+          startCrossfadeToNext(6);
+        }
+      };
     }
 
-    function startCrossfadeToNext() {
+    function startCrossfadeToNext(fadeSeconds = 6) {
       if (isCrossfading) return;
-      const nextIndex = currentIndex + 1;
-      if (nextIndex >= playlist.length) {
-        console.log("No next track to crossfade into.");
-        return; // last track, nothing to mix into
-      }
+      if (playlist.length < 2) return;
+
+      // Loop playlist: after last, go back to first
+      let nextIndex = (currentIndex + 1) % playlist.length;
 
       isCrossfading = true;
 
@@ -798,64 +909,63 @@
       nextAudio
         .play()
         .then(() => {
-          const steps = 30;
-          const stepTime = (crossfadeSeconds * 1000) / steps;
+          const steps = 40;
+          const interval = (fadeSeconds * 1000) / steps;
           let step = 0;
 
           setStatus(`Crossfading to: ${nextTrack.title}`);
+
           fadeInterval = setInterval(() => {
             step++;
             const t = step / steps;
 
-            // Equal-ish power style curve: smoother than linear
-            const newVolCurrent = Math.cos((t * Math.PI) / 2); // 1 -> 0
-            const newVolNext = Math.sin((t * Math.PI) / 2);    // 0 -> 1
+            // Equal-power fade
+            const volOut = Math.cos((t * Math.PI) / 2);
+            const volIn = Math.sin((t * Math.PI) / 2);
 
-            currentAudio.volume = Math.max(0, Math.min(1, newVolCurrent));
-            nextAudio.volume = Math.max(0, Math.min(1, newVolNext));
+            currentAudio.volume = Math.max(0, Math.min(1, volOut));
+            nextAudio.volume = Math.max(0, Math.min(1, volIn));
 
             if (step >= steps) {
               clearFadeInterval();
               currentAudio.pause();
               currentAudio.currentTime = 0;
+
               swapAudios();
               currentIndex = nextIndex;
               renderPlaylist();
               setStatus(`Now playing: ${nextTrack.title}`);
-              scheduleCrossfade(); // schedule mix for the new active track
+              scheduleAutoMix();
             }
-          }, stepTime);
+          }, interval);
         })
         .catch((err) => {
-          console.error(err);
+          console.error("Crossfade failed:", err);
           clearFadeInterval();
-          goToNextTrack(false);
+          // Fallback: hard switch
+          currentAudio.pause();
+          currentAudio.currentTime = 0;
+          swapAudios();
+          currentIndex = nextIndex;
+          renderPlaylist();
+          scheduleAutoMix();
         });
     }
 
-    function goToNextTrack(autoStart = true) {
-      const nextIndex = currentIndex + 1;
-      if (nextIndex >= playlist.length) {
-        setStatus("Reached end of playlist.");
-        isPlaying = false;
-        playPauseBtn.textContent = "▶";
-        return;
-      }
-      if (autoStart) {
-        playTrack(nextIndex);
-      } else {
-        currentIndex = nextIndex;
-        playTrack(currentIndex);
-      }
+    function goToNextTrack() {
+      if (playlist.length === 0) return;
+      const nextIndex = (currentIndex + 1) % playlist.length;
+      playTrack(nextIndex);
     }
 
     function goToPrevTrack() {
+      if (playlist.length === 0) return;
       let prevIndex = currentIndex - 1;
-      if (prevIndex < 0) prevIndex = 0;
+      if (prevIndex < 0) prevIndex = playlist.length - 1;
       playTrack(prevIndex);
     }
 
-    // Controls
+    // ---------------- CONTROLS ----------------
     playPauseBtn.addEventListener("click", () => {
       if (playlist.length === 0) {
         setStatus("Add some tracks first.");
@@ -873,7 +983,7 @@
             .then(() => {
               isPlaying = true;
               playPauseBtn.textContent = "⏸";
-              scheduleCrossfade();
+              scheduleAutoMix();
             })
             .catch((err) => {
               console.error(err);
@@ -890,7 +1000,7 @@
 
     nextBtn.addEventListener("click", () => {
       if (playlist.length === 0) return;
-      goToNextTrack(true);
+      goToNextTrack();
     });
 
     prevBtn.addEventListener("click", () => {
