@@ -441,14 +441,18 @@
       Uses local audio files / URLs. Remember to follow Pixabay’s license when you source tracks.
     </div>
   </div>
-
   <script>
     // STATE
-   let currentIndex = -1;
-let isPlaying = false;
-let isCrossfading = false;
-let crossfadeSeconds = 8;      // X seconds (slider)
-let crossfadeTimerId = null;   // timer for "mix after X seconds"
+    const playlist = []; // <--- you were missing this
+    let currentIndex = -1;
+    let isPlaying = false;
+    let isCrossfading = false;
+
+    // X seconds from slider: used both for
+    // 1) how long we wait before mixing
+    // 2) how long the crossfade lasts
+    let crossfadeSeconds = 8;
+    let crossfadeTimerId = null;
 
     // Two audio elements for crossfade
     const audioA = new Audio();
@@ -590,35 +594,37 @@ let crossfadeTimerId = null;   // timer for "mix after X seconds"
 
     // Add tracks from file
     fileInput.addEventListener("change", (e) => {
-  const files = Array.from(e.target.files || []);
-  if (!files.length) {
-    setStatus("No files selected.");
-    return;
-  }
+      const files = Array.from(e.target.files || []);
+      if (!files.length) {
+        setStatus("No files selected.");
+        return;
+      }
 
-  files.forEach((file) => {
-    // Basic guard: ignore 0-byte files
-    if (file.size === 0) return;
+      let addedCount = 0;
 
-    playlist.push({
-      id: crypto.randomUUID(),
-      title: file.name.replace(/\.[^/.]+$/, ""),
-      sourceType: "file",
-      file,
-      url: URL.createObjectURL(file),
-      duration: null,
+      files.forEach((file) => {
+        if (file.size === 0) return;
+
+        playlist.push({
+          id: crypto.randomUUID(),
+          title: file.name.replace(/\.[^/.]+$/, ""),
+          sourceType: "file",
+          file,
+          url: URL.createObjectURL(file),
+          duration: null,
+        });
+        addedCount++;
+      });
+
+      if (addedCount === 0) {
+        setStatus("Could not add any tracks. Try a different MP3 file.");
+      } else {
+        setStatus(`Added ${addedCount} file(s) to playlist.`);
+      }
+
+      renderPlaylist();
+      fileInput.value = "";
     });
-  });
-
-  if (playlist.length === 0) {
-    setStatus("Could not add any tracks. Try a different MP3 file.");
-  } else {
-    setStatus(`Added ${files.length} file(s) to playlist.`);
-  }
-
-  renderPlaylist();
-  fileInput.value = "";
-});
 
     // Add tracks from URL
     addUrlBtn.addEventListener("click", () => {
@@ -670,7 +676,6 @@ let crossfadeTimerId = null;   // timer for "mix after X seconds"
     }
 
     function loadTrackInto(audio, track) {
-      // record duration when available
       audio.onloadedmetadata = () => {
         if (!track.duration && audio.duration && isFinite(audio.duration)) {
           track.duration = audio.duration;
@@ -728,42 +733,31 @@ let crossfadeTimerId = null;   // timer for "mix after X seconds"
       }
     }
 
-    // Automix (crossfade)
-  function scheduleCrossfade() {
-  // reset handlers on both audio objects
-  audioA.onended = audioB.onended = null;
-  audioA.ontimeupdate = audioB.ontimeupdate = null;
-
-  const audio = getActiveAudio();
-  if (!audio) return;
-
-  // Always continue to next track when one ends
-  audio.onended = () => {
-    goToNextTrack(true);
-  };
-
-  // If duration is known, do timed crossfade
-  audio.ontimeupdate = () => {
-    if (!isPlaying || isCrossfading) return;
-    if (audio.duration && isFinite(audio.duration)) {
-      const timeLeft = audio.duration - audio.currentTime;
-      if (timeLeft <= crossfadeSeconds && crossfadeSeconds < audio.duration) {
-        startCrossfadeToNext();
+    // Automix (mix after X seconds)
+    function scheduleCrossfade() {
+      // Clear handlers and timers
+      audioA.onended = audioB.onended = null;
+      audioA.ontimeupdate = audioB.ontimeupdate = null;
+      if (crossfadeTimerId) {
+        clearTimeout(crossfadeTimerId);
+        crossfadeTimerId = null;
       }
-    }
-  };
-}
 
-      // If duration is known, do timed crossfade
-      audio.ontimeupdate = () => {
-        if (!isPlaying || isCrossfading) return;
-        if (audio.duration && isFinite(audio.duration)) {
-          const timeLeft = audio.duration - audio.currentTime;
-          if (timeLeft <= crossfadeSeconds && crossfadeSeconds < audio.duration) {
-            startCrossfadeToNext();
-          }
-        }
+      const audio = getActiveAudio();
+      if (!audio) return;
+
+      // Always continue to next track when one ends
+      audio.onended = () => {
+        goToNextTrack(true);
       };
+
+      // MIX AFTER X SECONDS (slider)
+      const thisTrackIndex = currentIndex;
+      crossfadeTimerId = setTimeout(() => {
+        if (!isPlaying) return;
+        if (currentIndex !== thisTrackIndex) return;
+        startCrossfadeToNext();
+      }, crossfadeSeconds * 1000);
     }
 
     function startCrossfadeToNext() {
@@ -805,7 +799,7 @@ let crossfadeTimerId = null;   // timer for "mix after X seconds"
               currentIndex = nextIndex;
               renderPlaylist();
               setStatus(`Now playing: ${nextTrack.title}`);
-              scheduleCrossfade(); // new active track
+              scheduleCrossfade(); // schedule next mix
             }
           }, stepTime);
         })
@@ -881,5 +875,6 @@ let crossfadeTimerId = null;   // timer for "mix after X seconds"
       goToPrevTrack();
     });
   </script>
+  
 </body>
 </html>
