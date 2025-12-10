@@ -444,11 +444,11 @@
 
   <script>
     // STATE
-    const playlist = []; // { id, title, sourceType, url, file, duration? }
-    let currentIndex = -1;
-    let isPlaying = false;
-    let isCrossfading = false;
-    let crossfadeSeconds = 8;
+   let currentIndex = -1;
+let isPlaying = false;
+let isCrossfading = false;
+let crossfadeSeconds = 8;      // X seconds (slider)
+let crossfadeTimerId = null;   // timer for "mix after X seconds"
 
     // Two audio elements for crossfade
     const audioA = new Audio();
@@ -718,33 +718,29 @@
     }
 
     // Automix (crossfade)
-  let crossfadeTimerId = null;
-
-function scheduleCrossfade() {
-  // Clear old handlers and timers
+  function scheduleCrossfade() {
+  // reset handlers on both audio objects
   audioA.onended = audioB.onended = null;
   audioA.ontimeupdate = audioB.ontimeupdate = null;
-  if (crossfadeTimerId) {
-    clearTimeout(crossfadeTimerId);
-    crossfadeTimerId = null;
-  }
 
   const audio = getActiveAudio();
   if (!audio) return;
 
-  // 1) Always go to the next track when the current one ends
+  // Always continue to next track when one ends
   audio.onended = () => {
     goToNextTrack(true);
   };
 
-  // 2) FORCE a crossfade after crossfadeSeconds from the start
-  const thisTrackIndex = currentIndex;
-  crossfadeTimerId = setTimeout(() => {
-    // if user paused or skipped, do nothing
-    if (!isPlaying) return;
-    if (currentIndex !== thisTrackIndex) return;
-    startCrossfadeToNext();
-  }, crossfadeSeconds * 1000);
+  // If duration is known, do timed crossfade
+  audio.ontimeupdate = () => {
+    if (!isPlaying || isCrossfading) return;
+    if (audio.duration && isFinite(audio.duration)) {
+      const timeLeft = audio.duration - audio.currentTime;
+      if (timeLeft <= crossfadeSeconds && crossfadeSeconds < audio.duration) {
+        startCrossfadeToNext();
+      }
+    }
+  };
 }
 
       // If duration is known, do timed crossfade
