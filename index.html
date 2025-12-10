@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Pixabay Automix Player</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      background: radial-gradient(circle at top, #020617, #020617 40%, #000 100%);
+      color: #e5e7eb;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .app {
+      width: 95%;
+      max-width: 900px;
+      background: rgba(15,23,42,0.98);
+      border-radius: 20px;
+      padding: 24px 24px 18px;
+      box-shadow: 0 24px 70px rgba(0,0,0,0.9);
+      border: 1px solid rgba(148,163,184,0.4);
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .title {
+      font-size: 1.4rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .badge {
+      font-size: 0.7rem;
+      padding: 3px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,184,0.6);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #9ca3af;
+    }
+
+    .subtitle {
+      font-size: 0.85rem;
+      color: #9ca3af;
+      margin-bottom: 16px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+      gap: 16px;
+    }
+
+    @media (max-width: 768px) {
+      .grid {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    .card {
+      background: rgba(15,23,42,0.95);
+      border-radius: 16px;
+      border: 1px solid rgba(75,85,99,0.9);
+      padding: 14px 14px 10px;
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .card-title {
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+
+    .card-desc {
+      font-size: 0.8rem;
+      color: #9ca3af;
+      margin-bottom: 8px;
+    }
+
+    .chip {
+      font-size: 0.7rem;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: rgba(15,23,42,1);
+      border: 1px solid rgba(148,163,184,0.5);
+      color: #e5e7eb;
+    }
+
+    .input-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .input {
+      flex: 1 1 160px;
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,184,0.6);
+      padding: 7px 11px;
+      background: rgba(15,23,42,0.9);
+      color: #e5e7eb;
+      font-size: 0.8rem;
+      outline: none;
+    }
+
+    .input::placeholder {
+      color: #6b7280;
+    }
+
+    .btn {
+      border: none;
+      border-radius: 999px;
+      padding: 7px 14px;
+      font-size: 0.8rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      white-space: nowrap;
+      background: linear-gradient(135deg, #4f46e5, #0ea5e9);
+      color: white;
+    }
+
+    .btn.secondary {
+      background: rgba(15,23,42,1);
+      border: 1px solid rgba(148,163,184,0.7);
+      color: #e5e7eb;
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: default;
+    }
+
+    .file-input {
+      display: inline-block;
+      font-size: 0.8rem;
+    }
+
+    .file-input input[type="file"] {
+      display: none;
+    }
+
+    .file-label {
+      border-radius: 999px;
+      border: 1px dashed rgba(148,163,184,0.7);
+      padding: 7px 14px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: #e5e7eb;
+    }
+
+    .playlist {
+      max-height: 230px;
+      overflow-y: auto;
+      padding-right: 4px;
+      margin-bottom: 6px;
+    }
+
+    .track {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 8px;
+      border-radius: 10px;
+      margin-bottom: 4px;
+      font-size: 0.8rem;
+      background: rgba(15,23,42,0.85);
+      border: 1px solid transparent;
+    }
+
+    .track.active {
+      border-color: #4f46e5;
+      background: radial-gradient(circle at left, rgba(79,70,229,0.35), rgba(15,23,42,0.95));
+    }
+
+    .track-main {
+      min-width: 0;
+    }
+
+    .track-title {
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .track-meta {
+      font-size: 0.7rem;
+      color: #9ca3af;
+    }
+
+    .pill {
+      font-size: 0.7rem;
+      padding: 2px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,184,0.7);
+      color: #9ca3af;
+    }
+
+    .remove-btn {
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      font-size: 0.8rem;
+      color: #9ca3af;
+      padding: 2px 4px;
+    }
+
+    .remove-btn:hover {
+      color: #f97373;
+    }
+
+    .controls {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-top: 4px;
+    }
+
+    .controls-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .control-btn {
+      width: 34px;
+      height: 34px;
+      border-radius: 999px;
+      border: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      background: rgba(15,23,42,1);
+      border: 1px solid rgba(148,163,184,0.8);
+      color: #e5e7eb;
+      font-size: 1rem;
+    }
+
+    .control-btn.primary {
+      background: linear-gradient(135deg, #4f46e5, #0ea5e9);
+      border: none;
+    }
+
+    .small-text {
+      font-size: 0.72rem;
+      color: #9ca3af;
+    }
+
+    .slider-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .slider-label {
+      font-size: 0.75rem;
+      color: #9ca3af;
+      white-space: nowrap;
+    }
+
+    input[type="range"] {
+      accent-color: #4f46e5;
+    }
+
+    .status {
+      font-size: 0.75rem;
+      color: #a5b4fc;
+      margin-top: 4px;
+      min-height: 18px;
+    }
+
+    .hint {
+      font-size: 0.7rem;
+      color: #6b7280;
+      margin-top: 2px;
+    }
+
+    .footer {
+      margin-top: 10px;
+      font-size: 0.68rem;
+      color: #6b7280;
+      text-align: right;
+    }
+
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="header">
+      <div>
+        <div class="title">
+          🎚️ Pixabay Automix
+          <span class="badge">beta</span>
+        </div>
+        <div class="subtitle">
+          Load royalty-free tracks (e.g. from Pixabay Music) and let the browser auto-mix them with smooth crossfades.
+        </div>
+      </div>
+      <div class="chip">Locally mixed · No server</div>
+    </div>
+
+    <div class="grid">
+      <!-- LEFT: SOURCES -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Add Tracks</div>
+          <span class="pill">Recommended: MP3</span>
+        </div>
+        <p class="card-desc">
+          Download music from Pixabay, then either upload the files or paste direct MP3 URLs.
+        </p>
+
+        <div class="input-row">
+          <div class="file-input">
+            <label class="file-label">
+              📂 Add audio files
+              <input id="fileInput" type="file" accept="audio/*" multiple />
+            </label>
+          </div>
+
+          <input
+            id="urlInput"
+            class="input"
+            placeholder="https://example.com/path-to-pixabay-track.mp3"
+          />
+          <button id="addUrlBtn" class="btn secondary">➕ Add URL</button>
+        </div>
+
+        <div class="hint">
+          Tip: On Pixabay Music, download the track or get the direct MP3 URL, then add it here.
+        </div>
+      </div>
+
+      <!-- RIGHT: PLAYER -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Playlist & Automix</div>
+        </div>
+        <p class="card-desc">
+          Tracks play in order with an automatic crossfade between them. No shuffle, no gaps.
+        </p>
+
+        <div id="playlist" class="playlist"></div>
+        <div class="hint" id="emptyHint">No tracks yet. Add some on the left to start mixing.</div>
+
+        <div class="controls">
+          <div class="controls-left">
+            <button id="prevBtn" class="control-btn" title="Previous">⏮</button>
+            <button id="playPauseBtn" class="control-btn primary" title="Play / Pause">▶</button>
+            <button id="nextBtn" class="control-btn" title="Next">⏭</button>
+          </div>
+
+          <div class="slider-group">
+            <span class="slider-label">Crossfade</span>
+            <input
+              id="crossfadeSlider"
+              type="range"
+              min="2"
+              max="20"
+              value="8"
+            />
+            <span id="crossfadeValue" class="slider-label">8s</span>
+          </div>
+        </div>
+
+        <div class="status" id="statusText"></div>
+        <div class="hint">
+          The first play requires a user click (browser autoplay rule). After that, automix will continue.
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      Uses local audio files / URLs. Remember to follow Pixabay’s license when you source tracks.
+    </div>
+  </div>
+
+  <script>
+    // STATE
+    const playlist = []; // { id, title, sourceType, url, file, duration? }
+    let currentIndex = -1;
+    let isPlaying = false;
+    let isCrossfading = false;
+    let crossfadeSeconds = 8;
+
+    // Two audio elements for crossfade
+    const audioA = new Audio();
+    const audioB = new Audio();
+    audioA.preload = "metadata";
+    audioB.preload = "metadata";
+    audioA.crossOrigin = "anonymous";
+    audioB.crossOrigin = "anonymous";
+
+    let activeAudio = audioA;
+    let inactiveAudio = audioB;
+    let fadeInterval = null;
+
+    // DOM
+    const fileInput = document.getElementById("fileInput");
+    const urlInput = document.getElementById("urlInput");
+    const addUrlBtn = document.getElementById("addUrlBtn");
+    const playlistEl = document.getElementById("playlist");
+    const emptyHint = document.getElementById("emptyHint");
+    const playPauseBtn = document.getElementById("playPauseBtn");
+    const prevBtn = document.getElementById("prevBtn");
+    const nextBtn = document.getElementById("nextBtn");
+    const crossfadeSlider = document.getElementById("crossfadeSlider");
+    const crossfadeValue = document.getElementById("crossfadeValue");
+    const statusText = document.getElementById("statusText");
+
+    function setStatus(text) {
+      statusText.textContent = text || "";
+    }
+
+    function updateCrossfadeValue() {
+      crossfadeSeconds = Number(crossfadeSlider.value) || 8;
+      crossfadeValue.textContent = crossfadeSeconds + "s";
+    }
+
+    updateCrossfadeValue();
+
+    crossfadeSlider.addEventListener("input", updateCrossfadeValue);
+
+    // Helpers
+    function formatSeconds(sec) {
+      if (!sec || !isFinite(sec)) return "--:--";
+      const m = Math.floor(sec / 60);
+      const s = Math.floor(sec % 60);
+      return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+    }
+
+    function renderPlaylist() {
+      playlistEl.innerHTML = "";
+      if (playlist.length === 0) {
+        emptyHint.style.display = "block";
+        return;
+      }
+      emptyHint.style.display = "none";
+
+      playlist.forEach((track, index) => {
+        const row = document.createElement("div");
+        row.className = "track" + (index === currentIndex ? " active" : "");
+
+        const main = document.createElement("div");
+        main.className = "track-main";
+
+        const title = document.createElement("div");
+        title.className = "track-title";
+        title.textContent = track.title || "Untitled track";
+
+        const meta = document.createElement("div");
+        meta.className = "track-meta";
+        const sourceLabel = track.sourceType === "file" ? "File" : "URL";
+        meta.textContent =
+          sourceLabel +
+          (track.duration ? " · " + formatSeconds(track.duration) : "");
+
+        main.appendChild(title);
+        main.appendChild(meta);
+
+        const right = document.createElement("div");
+        right.style.display = "flex";
+        right.style.alignItems = "center";
+        right.style.gap = "6px";
+
+        const pill = document.createElement("span");
+        pill.className = "pill";
+        pill.textContent = "#" + (index + 1);
+        right.appendChild(pill);
+
+        const removeBtn = document.createElement("button");
+        removeBtn.className = "remove-btn";
+        removeBtn.innerHTML = "✕";
+        removeBtn.title = "Remove track";
+
+        removeBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          removeTrack(index);
+        });
+
+        right.appendChild(removeBtn);
+
+        row.appendChild(main);
+        row.appendChild(right);
+
+        row.addEventListener("click", () => {
+          startFromIndex(index);
+        });
+
+        playlistEl.appendChild(row);
+      });
+    }
+
+    function removeTrack(index) {
+      if (index < 0 || index >= playlist.length) return;
+      const wasCurrent = index === currentIndex;
+      playlist.splice(index, 1);
+
+      if (playlist.length === 0) {
+        stopPlayback();
+        currentIndex = -1;
+      } else if (wasCurrent) {
+        // Move to next or reset
+        if (index >= playlist.length) {
+          currentIndex = playlist.length - 1;
+        }
+        startFromIndex(currentIndex, true);
+      } else if (index < currentIndex) {
+        currentIndex -= 1;
+      }
+
+      renderPlaylist();
+    }
+
+    function stopPlayback() {
+      clearFadeInterval();
+      audioA.pause();
+      audioB.pause();
+      audioA.currentTime = 0;
+      audioB.currentTime = 0;
+      isPlaying = false;
+      playPauseBtn.textContent = "▶";
+      setStatus("Stopped.");
+    }
+
+    // Add tracks
+    fileInput.addEventListener("change", (e) => {
+      const files = Array.from(e.target.files || []);
+      if (!files.length) return;
+
+      files.forEach((file) => {
+        playlist.push({
+          id: crypto.randomUUID(),
+          title: file.name.replace(/\.[^/.]+$/, ""),
+          sourceType: "file",
+          file,
+          url: URL.createObjectURL(file),
+          duration: null,
+        });
+      });
+
+      setStatus(`Added ${files.length} file(s) to playlist.`);
+      renderPlaylist();
+      fileInput.value = "";
+    });
+
+    addUrlBtn.addEventListener("click", () => {
+      const url = urlInput.value.trim();
+      if (!url) return;
+      try {
+        new URL(url);
+      } catch {
+        setStatus("Please enter a valid URL.");
+        return;
+      }
+
+      const titleGuess = url.split("/").pop().split("?")[0];
+      playlist.push({
+        id: crypto.randomUUID(),
+        title: decodeURIComponent(titleGuess || "Track (URL)"),
+        sourceType: "url",
+        file: null,
+        url,
+        duration: null,
+      });
+
+      setStatus("URL track added.");
+      urlInput.value = "";
+      renderPlaylist();
+    });
+
+    // Audio loading & playing
+    function getActiveAudio() {
+      return activeAudio;
+    }
+
+    function getInactiveAudio() {
+      return inactiveAudio;
+    }
+
+    function swapAudios() {
+      const tmp = activeAudio;
+      activeAudio = inactiveAudio;
+      inactiveAudio = tmp;
+    }
+
+    function clearFadeInterval() {
+      if (fadeInterval) {
+        clearInterval(fadeInterval);
+        fadeInterval = null;
+      }
+      isCrossfading = false;
+    }
+
+    function loadTrackInto(audio, track) {
+      audio.src = track.url;
+      audio.load();
+    }
+
+    function playTrack(index) {
+      if (index < 0 || index >= playlist.length) {
+        setStatus("No more tracks.");
+        isPlaying = false;
+        playPauseBtn.textContent = "▶";
+        return;
+      }
+      currentIndex = index;
+      const track = playlist[index];
+
+      clearFadeInterval();
+
+      const audio = getActiveAudio();
+      loadTrackInto(audio, track);
+
+      audio.volume = 1;
+      audio
+        .play()
+        .then(() => {
+          isPlaying = true;
+          playPauseBtn.textContent = "⏸";
+          setStatus(`Now playing: ${track.title}`);
+          renderPlaylist();
+        })
+        .catch((err) => {
+          console.error(err);
+          setStatus("Playback failed. Browser blocked autoplay?");
+          isPlaying = false;
+          playPauseBtn.textContent = "▶";
+        });
+
+      // After metadata, store duration
+      audio.onloadedmetadata = () => {
+        if (!track.duration && audio.duration && isFinite(audio.duration)) {
+          track.duration = audio.duration;
+          renderPlaylist();
+        }
+      };
+    }
+
+    function startFromIndex(index, autoPlay = true) {
+      if (index < 0 || index >= playlist.length) return;
+      currentIndex = index;
+      if (autoPlay) {
+        playTrack(currentIndex);
+      } else {
+        // Just prepare
+        const track = playlist[currentIndex];
+        const audio = getActiveAudio();
+        loadTrackInto(audio, track);
+        setStatus(`Ready: ${track.title}`);
+        renderPlaylist();
+      }
+    }
+
+    // Automix (crossfade)
+    function scheduleCrossfade() {
+      const audio = getActiveAudio();
+      if (!audio) return;
+
+      audio.ontimeupdate = () => {
+        if (!isPlaying || isCrossfading || !audio.duration || !isFinite(audio.duration)) return;
+
+        const timeLeft = audio.duration - audio.currentTime;
+        if (timeLeft <= crossfadeSeconds && crossfadeSeconds < audio.duration) {
+          // Start crossfade
+          startCrossfadeToNext();
+        }
+      };
+
+      audio.onended = () => {
+        // In case track is shorter than crossfade window
+        if (!isCrossfading) {
+          goToNextTrack(false);
+        }
+      };
+    }
+
+    function startCrossfadeToNext() {
+      if (isCrossfading) return;
+      const nextIndex = currentIndex + 1;
+      if (nextIndex >= playlist.length) return; // last track, no crossfade
+
+      isCrossfading = true;
+
+      const currentAudio = getActiveAudio();
+      const nextAudio = getInactiveAudio();
+      const nextTrack = playlist[nextIndex];
+
+      loadTrackInto(nextAudio, nextTrack);
+      nextAudio.volume = 0;
+
+      nextAudio
+        .play()
+        .then(() => {
+          const steps = 30;
+          const stepTime = (crossfadeSeconds * 1000) / steps;
+          let step = 0;
+
+          setStatus(`Crossfading to: ${nextTrack.title}`);
+          fadeInterval = setInterval(() => {
+            step++;
+            const t = step / steps;
+            const newVolCurrent = Math.max(0, 1 - t);
+            const newVolNext = Math.min(1, t);
+
+            currentAudio.volume = newVolCurrent;
+            nextAudio.volume = newVolNext;
+
+            if (step >= steps) {
+              clearFadeInterval();
+              currentAudio.pause();
+              currentAudio.currentTime = 0;
+              swapAudios();
+              currentIndex = nextIndex;
+              renderPlaylist();
+              setStatus(`Now playing: ${nextTrack.title}`);
+            }
+          }, stepTime);
+        })
+        .catch((err) => {
+          console.error(err);
+          clearFadeInterval();
+          // Fallback: just move to next
+          goToNextTrack(false);
+        });
+    }
+
+    function goToNextTrack(autoStart = true) {
+      const nextIndex = currentIndex + 1;
+      if (nextIndex >= playlist.length) {
+        setStatus("Reached end of playlist.");
+        isPlaying = false;
+        playPauseBtn.textContent = "▶";
+        return;
+      }
+      if (autoStart) {
+        playTrack(nextIndex);
+      } else {
+        currentIndex = nextIndex;
+        playTrack(currentIndex);
+      }
+    }
+
+    function goToPrevTrack() {
+      let prevIndex = currentIndex - 1;
+      if (prevIndex < 0) prevIndex = 0;
+      playTrack(prevIndex);
+    }
+
+    // Controls
+    playPauseBtn.addEventListener("click", () => {
+      if (playlist.length === 0) {
+        setStatus("Add some tracks first.");
+        return;
+      }
+
+      const audio = getActiveAudio();
+
+      if (!isPlaying) {
+        // Start playback
+        if (currentIndex === -1) {
+          playTrack(0);
+        } else {
+          audio
+            .play()
+            .then(() => {
+              isPlaying = true;
+              playPauseBtn.textContent = "⏸";
+              scheduleCrossfade();
+            })
+            .catch((err) => {
+              console.error(err);
+              setStatus("Playback blocked. Tap play again or check browser settings.");
+            });
+        }
+      } else {
+        audio.pause();
+        isPlaying = false;
+        playPauseBtn.textContent = "▶";
+        setStatus("Paused.");
+      }
+
+      scheduleCrossfade();
+    });
+
+    nextBtn.addEventListener("click", () => {
+      if (playlist.length === 0) return;
+      goToNextTrack(true);
+      scheduleCrossfade();
+    });
+
+    prevBtn.addEventListener("click", () => {
+      if (playlist.length === 0) return;
+      goToPrevTrack();
+      scheduleCrossfade();
+    });
+
+    // Initial setup
+    scheduleCrossfade();
+  </script>
+</body>
+</html>
