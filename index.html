@@ -381,7 +381,7 @@
           <div class="file-input">
             <label class="file-label">
               📂 Add audio files
-              <input id="fileInput" type="file" accept="audio/*" multiple />
+              <input id="fileInput" type="file" multiple />
             </label>
           </div>
 
@@ -590,24 +590,35 @@ let crossfadeTimerId = null;   // timer for "mix after X seconds"
 
     // Add tracks from file
     fileInput.addEventListener("change", (e) => {
-      const files = Array.from(e.target.files || []);
-      if (!files.length) return;
+  const files = Array.from(e.target.files || []);
+  if (!files.length) {
+    setStatus("No files selected.");
+    return;
+  }
 
-      files.forEach((file) => {
-        playlist.push({
-          id: crypto.randomUUID(),
-          title: file.name.replace(/\.[^/.]+$/, ""),
-          sourceType: "file",
-          file,
-          url: URL.createObjectURL(file),
-          duration: null,
-        });
-      });
+  files.forEach((file) => {
+    // Basic guard: ignore 0-byte files
+    if (file.size === 0) return;
 
-      setStatus(`Added ${files.length} file(s) to playlist.`);
-      renderPlaylist();
-      fileInput.value = "";
+    playlist.push({
+      id: crypto.randomUUID(),
+      title: file.name.replace(/\.[^/.]+$/, ""),
+      sourceType: "file",
+      file,
+      url: URL.createObjectURL(file),
+      duration: null,
     });
+  });
+
+  if (playlist.length === 0) {
+    setStatus("Could not add any tracks. Try a different MP3 file.");
+  } else {
+    setStatus(`Added ${files.length} file(s) to playlist.`);
+  }
+
+  renderPlaylist();
+  fileInput.value = "";
+});
 
     // Add tracks from URL
     addUrlBtn.addEventListener("click", () => {
