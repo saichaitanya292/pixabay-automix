@@ -718,18 +718,26 @@
     }
 
     // Automix (crossfade)
-    function scheduleCrossfade() {
-      // reset handlers on both audio objects
-      audioA.onended = audioB.onended = null;
-      audioA.ontimeupdate = audioB.ontimeupdate = null;
+  function scheduleCrossfade() {
+  audioA.onended = audioB.onended = null;
+  audioA.ontimeupdate = audioB.ontimeupdate = null;
 
-      const audio = getActiveAudio();
-      if (!audio) return;
+  const audio = getActiveAudio();
+  if (!audio) return;
 
-      // Always continue to next track when one ends
-      audio.onended = () => {
-        goToNextTrack(true);
-      };
+  // Always go to next track when the current one ends
+  audio.onended = () => {
+    goToNextTrack(true);
+  };
+
+  // FORCE a crossfade after 5 seconds as a demo
+  const thisTrackIndex = currentIndex;
+  setTimeout(() => {
+    if (!isPlaying) return;
+    if (currentIndex !== thisTrackIndex) return; // user skipped
+    startCrossfadeToNext();
+  }, 5000);
+}
 
       // If duration is known, do timed crossfade
       audio.ontimeupdate = () => {
