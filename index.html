@@ -911,26 +911,26 @@
       }
 
       audio.ontimeupdate = () => {
-        if (!isPlaying || isCrossfading || !audio.duration) return;
-        if (!track.mixOutTime) {
-          // fallback: last 10s
-          const timeLeft = audio.duration - audio.currentTime;
-          if (timeLeft <= 10) {
-            startCrossfadeToNext(track.fadeSeconds || 8);
-          }
-          return;
-        }
+  if (!isPlaying || isCrossfading || !audio.duration) return;
 
-        const t = audio.currentTime;
-        const timeToMix = track.mixOutTime - t;
+  // If we don't have a mix point, fallback to last 10s
+  if (!track.mixOutTime) {
+    const timeLeft = audio.duration - audio.currentTime;
+    if (timeLeft <= 10 && !isCrossfading) {
+      startCrossfadeToNext(track.fadeSeconds || 8);
+    }
+    return;
+  }
 
-        // Start crossfade very close to planned mix-out moment
-        if (timeToMix <= 0.05 && timeToMix > -1 && !isCrossfading) {
-          console.log("Auto DJ: mix-out trigger", track.title);
-          startCrossfadeToNext(track.fadeSeconds || 8);
-        }
-      };
+  const t = audio.currentTime;
 
+  // Simple & robust: as soon as we've REACHED or PASSED mixOutTime,
+  // and we haven't already started a crossfade, start it.
+  if (!isCrossfading && t >= track.mixOutTime) {
+    console.log("Auto DJ: mix-out trigger at", t, "planned", track.mixOutTime);
+    startCrossfadeToNext(track.fadeSeconds || 8);
+  }
+};
       audio.onended = () => {
         if (!isCrossfading) {
           startCrossfadeToNext(track.fadeSeconds || 6);
